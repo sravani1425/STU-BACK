@@ -1,4 +1,5 @@
 import Student from '../models/Student.js';
+import User from '../models/User.js';
 
 // @desc    Get all students
 // @route   GET /api/students
@@ -130,6 +131,9 @@ export const updateStudent = async (req, res) => {
     const student = await Student.findById(req.params.id);
 
     if (student) {
+      const oldEmail = student.email;
+      const oldRollNumber = student.rollNumber;
+
       student.name = name || student.name;
       student.email = email || student.email;
       student.rollNumber = rollNumber || student.rollNumber;
@@ -138,6 +142,22 @@ export const updateStudent = async (req, res) => {
       student.activeBacklogs = activeBacklogs !== undefined ? activeBacklogs : student.activeBacklogs;
 
       const updatedStudent = await student.save();
+
+      // Find and update corresponding User credential document
+      const user = await User.findOne({
+        $or: [
+          { email: oldEmail },
+          { rollNumber: oldRollNumber }
+        ]
+      });
+
+      if (user) {
+        user.name = student.name;
+        user.email = student.email;
+        user.rollNumber = student.rollNumber;
+        await user.save();
+      }
+
       res.json(updatedStudent);
     } else {
       res.status(404).json({ message: 'Student not found' });

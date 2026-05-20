@@ -13,6 +13,7 @@ import certificateRoutes from './routes/certificateRoutes.js';
 import noticeRoutes from './routes/noticeRoutes.js';
 import timetableRoutes from './routes/timetableRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import feeRoutes from './routes/feeRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -47,6 +48,7 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/fees', feeRoutes);
 
 // Serve static files (uploads)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -68,6 +70,7 @@ const connectDB = async () => {
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
+  console.error('Error handled in server.js:', err);
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ message: `Upload error: ${err.message}` });
   } else if (err) {
