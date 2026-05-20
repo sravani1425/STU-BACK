@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Student from '../models/Student.js';
 import generateToken from '../utils/generateToken.js';
 
 // @desc    Register a new user
@@ -34,12 +35,26 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // If student role, check if Student record exists, otherwise create it
+      if (role === 'student') {
+        const studentExists = await Student.findOne({ rollNumber });
+        if (!studentExists) {
+          await Student.create({
+            name: user.name,
+            email: user.email,
+            rollNumber: user.rollNumber,
+            course: 'Not Assigned',
+          });
+        }
+      }
+
       res.status(201).json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         rollNumber: user.rollNumber,
+        profileImage: user.profileImage,
         token: generateToken(user._id),
       });
     } else {
@@ -68,10 +83,11 @@ export const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         rollNumber: user.rollNumber,
+        profileImage: user.profileImage,
         token: generateToken(user._id),
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ message: 'Invalid email/roll number or password' });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -92,10 +108,90 @@ export const getUserProfile = async (req, res) => {
         email: user.email,
         role: user.role,
         rollNumber: user.rollNumber,
+        profileImage: user.profileImage,
       });
     } else {
       res.status(404).json({ message: 'User not found' });
     }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update user profile details
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateUserProfile = async (req, res) => {
+  const { name, email, password } = req.body;
+
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      user.name = name || user.name;
+      
+      if (user.role !== 'student' && email) {
+        user.email = email;
+      }
+      
+      if (password) {
+        user.password = password;
+      }
+
+      const updatedUser = await user.save();
+
+      // Synchronize name to Student model if user is a student
+      if (user.role === 'student') {
+        const student = await Student.findOne({ rollNumber: user.rollNumber });
+        if (student) {
+          student.name = updatedUser.name;
+          await student.save();
+        }
+      }
+
+      res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        rollNumber: updatedUser.rollNumber,
+        profileImage: updatedUser.profileImage,
+        token: generateToken(updatedUser._id),
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Upload profile picture
+// @route   POST /api/auth/profile/image
+// @access  Private
+export const uploadProfileImage = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.profileImage = `/uploads/${req.file.filename}`;
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      rollNumber: user.rollNumber,
+      profileImage: user.profileImage,
+      token: generateToken(user._id),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

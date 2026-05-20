@@ -1,5 +1,6 @@
 import Attendance from '../models/Attendance.js';
 import Student from '../models/Student.js';
+import User from '../models/User.js';
 
 // @desc    Mark attendance
 // @route   POST /api/attendance

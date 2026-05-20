@@ -15,6 +15,12 @@ const submissionSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  score: {
+    type: Number,
+  },
+  feedback: {
+    type: String,
+  },
   submittedAt: {
     type: Date,
     default: Date.now,

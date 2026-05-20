@@ -3,7 +3,8 @@ import {
   createAssignment,
   getAssignments,
   submitAssignment,
-  getSubmissions
+  getSubmissions,
+  autoEvaluateSubmission
 } from '../controllers/assignmentController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 import { facultyOrAdmin } from '../middlewares/roleMiddleware.js';
@@ -20,5 +21,8 @@ router.route('/:id/submit')
 
 router.route('/:id/submissions')
   .get(protect, facultyOrAdmin, getSubmissions);
+
+router.route('/submission/:subId/evaluate')
+  .post(protect, facultyOrAdmin, autoEvaluateSubmission);
 
 export default router;
